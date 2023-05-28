@@ -10,7 +10,7 @@ def u_2_equation(x, u_1, u_2):
     return 2 * pow(u_1, 3)
 
 
-def runge_kutta_fourth_order(x, u_1, u_2, h, table):
+def runge_kutta_fourth_order(x, u_1, u_2, h):
     u_1_eval = u_2
     u_2_eval = u_2_equation(x, u_1, u_2)
 
@@ -42,34 +42,67 @@ def runge_kutta_fourth_order(x, u_1, u_2, h, table):
             ]),
         6)
 
-    table.append(row)
+    return new_u_1, new_u_2, row
 
-    return new_u_1, new_u_2
+
+def generate_kutta_table(start_iteration, iterations, step, u_1, u_2):
+    table = []
+    for itr in range(0, iterations):
+        new_values = runge_kutta_fourth_order(
+            x=start_iteration,
+            u_1=u_1,
+            u_2=u_2,
+            h=step
+        )
+        start_iteration += step
+        u_1 = new_values[0]
+        u_2 = new_values[1]
+        table.append(new_values[2])
+
+    return table
+
+
+def interpolate(table, aprox_value):
+    return round(
+        ((aprox_value - table[-1][0]) / (table[-2][0] - table[-1][0])) * table[-2][1] +
+        ((aprox_value - table[-2][0]) / (table[-1][0] - table[-2][0])) * table[-1][1]
+        , 6)
+
+
+def linear_shooting(start_iteration, iterations, step, u_1, u_2_first, u_2_second, aprox_value, tolerance):
+    runge_kutta_tables = []
+    interpolation_table = []
+
+    first_try = generate_kutta_table(start_iteration, iterations, step, u_1, u_2_first)
+    second_try = generate_kutta_table(start_iteration, iterations, step, u_1, u_2_second)
+    runge_kutta_tables.append(first_try)
+    runge_kutta_tables.append(second_try)
+
+    interpolation_table.append([first_try[-1][0][0], u_2_first])
+    interpolation_table.append([second_try[-1][0][0], u_2_second])
+
+    # while
+
+    inter = interpolate(interpolation_table, aprox_value)
+    return runge_kutta_tables, interpolation_table
 
 
 if __name__ == "__main__":
     print("Metodo de disparo lineal")
     u_1 = float(input("Ingresa el valor de y(x): "))
     start_iteration = int(input("Ingresa el valor inicial x: "))
-    u_2 = float(input("Ingresa una aproximacion para y'(x): "))
+    u_2_first = float(input("Ingresa una aproximacion para y'(x): "))
+    u_2_second = float(input("Ingresa otra aproximacion para y'(x): "))
     last_iteration = int(input("Ingresa el valor final x: "))
+    aprox_value = float(input("Ingresa el valor a aproximar: "))
+    tolerance = float(input("Ingresa el valor de la tolerancia: "))
     step = float(input("Ingresa el valor de h: "))
 
     headers = np.array(["u/u'", "f(u)/f(u')", "k1", "k2", "k3", "k4"])
 
-    runge_kutta_table = []
     # adding one extra to include initial iteration
     iterations = int(abs(last_iteration - start_iteration) / step) + 1
-    for itr in range(0, iterations):
-        new_values = runge_kutta_fourth_order(
-            x=start_iteration,
-            u_1=u_1,
-            u_2=u_2,
-            h=step,
-            table=runge_kutta_table
-        )
-        start_iteration += step
-        u_1 = new_values[0]
-        u_2 = new_values[1]
+    linear_shooting(start_iteration, iterations, step, u_1, u_2_first, u_2_second, aprox_value, tolerance)
 
-    print(tabulate(tabular_data=runge_kutta_table, headers=headers))
+    # for i in range(0, 2):
+    #     print(tabulate(tabular_data=runge_kutta_tables[i], headers=headers))
