@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def u_2_equation(x, u_1, u_2):
-    # TODO: CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
+    # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
     return 2 * pow(u_1, 3)
 
 
@@ -17,16 +17,16 @@ def runge_kutta_fourth_order(x, u_1, u_2, h):
     k_11 = h * u_1_eval
     k_12 = h * u_2_eval
     k_21 = h * (u_2 + k_12 / 2)
-    # TODO: CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
+    # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
     k_22 = h * 2 * pow((u_1 + k_11 / 2), 3)
     k_31 = h * (u_2 + k_22 / 2)
-    # TODO: CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
+    # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
     k_32 = h * 2 * pow((u_1 + k_21 / 2), 3)
     k_41 = h * (u_2 + k_32)
-    # TODO: CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
+    # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
     k_42 = h * 2 * pow((u_1 + k_31), 3)
 
-    # New values for u_1 and u_2
+    # ? New values for u_1 and u_2
     new_u_1 = u_1 + (1.0 / 6.0) * (k_11 + 2 * k_21 + 2 * k_31 + k_41)
     new_u_2 = u_2 + (1.0 / 6.0) * (k_12 + 2 * k_22 + 2 * k_32 + k_42)
 
@@ -73,18 +73,30 @@ def linear_shooting(start_iteration, iterations, step, u_1, u_2_first, u_2_secon
     runge_kutta_tables = []
     interpolation_table = []
 
+    # * Initial steps (generating two tables to compute an interpolation)
     first_try = generate_kutta_table(start_iteration, iterations, step, u_1, u_2_first)
     second_try = generate_kutta_table(start_iteration, iterations, step, u_1, u_2_second)
     runge_kutta_tables.append(first_try)
     runge_kutta_tables.append(second_try)
-
     interpolation_table.append([first_try[-1][0][0], u_2_first])
     interpolation_table.append([second_try[-1][0][0], u_2_second])
 
-    # while
+    # * Interpolation calculation and kutta table
+    interpolation = interpolate(interpolation_table, aprox_value)
+    next_try = generate_kutta_table(start_iteration, iterations, step, u_1, interpolation)
+    runge_kutta_tables.append(next_try)
+    interpolation_table.append([next_try[-1][0][0], interpolation])
 
-    inter = interpolate(interpolation_table, aprox_value)
-    return runge_kutta_tables, interpolation_table
+    # * Compute another interpolation value until difference is less than the tolerance or more than 10 iterations
+    itr_counter = 0
+    while abs(next_try[-1][0][0] - aprox_value) >= tolerance or itr_counter >= 10:
+        interpolation = interpolate(interpolation_table, aprox_value)
+        next_try = generate_kutta_table(start_iteration, iterations, step, u_1, interpolation)
+        runge_kutta_tables.append(next_try)
+        interpolation_table.append([next_try[-1][0][0], interpolation])
+        itr_counter += 1
+
+    return next_try[-1][0][0], runge_kutta_tables, interpolation_table
 
 
 if __name__ == "__main__":
@@ -99,10 +111,16 @@ if __name__ == "__main__":
     step = float(input("Ingresa el valor de h: "))
 
     headers = np.array(["u/u'", "f(u)/f(u')", "k1", "k2", "k3", "k4"])
+    headers_interpolation = np.array(["x", "x'"])
 
-    # adding one extra to include initial iteration
+    # ? Adding one extra to include initial iteration
     iterations = int(abs(last_iteration - start_iteration) / step) + 1
-    linear_shooting(start_iteration, iterations, step, u_1, u_2_first, u_2_second, aprox_value, tolerance)
+    inter, runge_kutta_tables, interpolation_table = linear_shooting(start_iteration, iterations,
+                                                                     step, u_1, u_2_first, u_2_second,
+                                                                     aprox_value, tolerance)
+    print("TABLAS DE RUNGE KUTTA")
+    for table in runge_kutta_tables:
+        print(tabulate(tabular_data=table, headers=headers) + "\n")
 
-    # for i in range(0, 2):
-    #     print(tabulate(tabular_data=runge_kutta_tables[i], headers=headers))
+    print("TABLA DE INTERPOLACION")
+    print(tabulate(tabular_data=interpolation_table, headers=headers_interpolation))
