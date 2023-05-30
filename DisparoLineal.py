@@ -7,7 +7,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def u_2_equation(x, u_1, u_2):
     # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
-    return 2 * pow(u_1, 3)
+    return 4 - (1 / 4) * pow(x, 3) - u_1 * u_2
 
 
 def runge_kutta_fourth_order(x, u_1, u_2, h):
@@ -18,13 +18,13 @@ def runge_kutta_fourth_order(x, u_1, u_2, h):
     k_12 = h * u_2_eval
     k_21 = h * (u_2 + k_12 / 2)
     # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
-    k_22 = h * 2 * pow((u_1 + k_11 / 2), 3)
+    k_22 = h * (4 - (1 / 4) * pow(x + h / 2, 3) - (u_1 + k_11 / 2) * (u_2 + k_12 / 2))
     k_31 = h * (u_2 + k_22 / 2)
     # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
-    k_32 = h * 2 * pow((u_1 + k_21 / 2), 3)
+    k_32 = h * (4 - (1 / 4) * pow(x + h / 2, 3) - (u_1 + k_21 / 2) * (u_2 + k_22 / 2))
     k_41 = h * (u_2 + k_32)
     # ! CHANGE IN CASE FUNCTION DEFINITIONS IS DIFFERENT
-    k_42 = h * 2 * pow((u_1 + k_31), 3)
+    k_42 = h * (4 - (1 / 4) * pow(x + h, 3) - (u_1 + k_31) * (u_2 + k_32))
 
     # ? New values for u_1 and u_2
     new_u_1 = u_1 + (1.0 / 6.0) * (k_11 + 2 * k_21 + 2 * k_31 + k_41)
